@@ -1,4 +1,4 @@
-﻿// Copyright (c) Ullrich Praetz - https://github.com/friflo. All rights reserved.
+// Copyright (c) Ullrich Praetz - https://github.com/friflo. All rights reserved.
 // See LICENSE file in the project root for full license information.
 
 using System;
@@ -122,7 +122,46 @@ public partial class EntityStore
         
         targetStore.CloneScrips(source, target);
     }
-    
+
+    public static void MergeEntity(Entity source, Entity target)
+    {
+        var sourceArch = source.GetArchetype() ?? throw EntityArgumentNullException(source, nameof(source));
+        var curTargetArch = target.GetArchetype() ?? throw EntityArgumentNullException(target, nameof(target));
+        var targetStore = target.store;
+        if (source.store == targetStore)
+        {
+            if (targetStore.internBase.activeQueryLoops > 0)
+            {
+                throw StructuralChangeWithinQueryLoop();
+            }
+        }
+
+        var targetComponentsBitSet = sourceArch.componentTypes.bitSet;
+        targetComponentsBitSet.Add(curTargetArch.ComponentTypes.bitSet);
+        var targetTagsBitSet = sourceArch.Tags.bitSet;
+        targetTagsBitSet.Add(curTargetArch.Tags.bitSet);
+        var targetArch = targetStore.GetArchetype(new() { bitSet = targetComponentsBitSet}, new() { bitSet = targetTagsBitSet});
+        if (targetArch != curTargetArch)
+        {
+            var removedIndexTypes = (curTargetArch.componentTypes.bitSet.l0 & ~targetArch.componentTypes.bitSet.l0) & EntityExtensions.IndexTypesMask;
+            // --- remove indexes of removed indexed components
+            if (removedIndexTypes != 0)
+            {
+                RemoveIndexedComponents(target, removedIndexTypes);
+            }
+            // --- move entity targetArch 
+            ref var node = ref targetStore.nodes[target.Id];
+            node.compIndex = Archetype.MoveEntityTo(curTargetArch, target.Id, node.compIndex, targetArch);
+            node.archetype = targetArch;
+        }
+        // bit == 1: update component index.    bit == 0: add component index
+        var updateIndexTypes = curTargetArch.componentTypes.bitSet.l0 & targetArch.componentTypes.bitSet.l0;
+        var context = new CopyContext(source, target);
+        Archetype.CopyComponents(sourceArch, targetArch, context, updateIndexTypes);
+
+        targetStore.CloneScrips(source, target);
+    }
+
     /// <summary>
     /// Create and return a clone of the passed <paramref name="entity"/> in the store.
     /// </summary>
