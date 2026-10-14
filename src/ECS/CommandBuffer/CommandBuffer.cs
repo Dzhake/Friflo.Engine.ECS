@@ -1,4 +1,4 @@
-// Copyright (c) Ullrich Praetz - https://github.com/friflo. All rights reserved.
+﻿// Copyright (c) Ullrich Praetz - https://github.com/friflo. All rights reserved.
 // See LICENSE file in the project root for full license information.
 
 using System;
@@ -442,11 +442,6 @@ public sealed class CommandBuffer : ICommandBuffer
     {
         return ref ChangeComponent<T>(default, entityId, ComponentChangedAction.Add);
     }
-
-    public ref T AddAndGetComponent<T>(int entityId, T component) where T : struct, IComponent
-    {
-        return ref ChangeAndGetComponent(component, entityId, ComponentChangedAction.Add);
-    }
     
     /// <summary>
     /// Add the given <paramref name="component"/> with type <typeparamref name="T"/> to the entity with the passed <paramref name="entityId"/>.
@@ -500,7 +495,7 @@ public sealed class CommandBuffer : ICommandBuffer
         command.component       = component;
         return ref command.component;
     }
-
+    
     private  ComponentCommands CreateComponentCommands(int structIndex) {
         var componentType = Static.ComponentTypes[structIndex];
         return intern.componentCommandTypes[structIndex] = componentType.CreateComponentCommands();
@@ -683,4 +678,3 @@ public sealed class CommandBuffer : ICommandBuffer
     }
     #endregion
 }
-
