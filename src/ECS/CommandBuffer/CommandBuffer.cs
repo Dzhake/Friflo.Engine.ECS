@@ -1,4 +1,4 @@
-﻿// Copyright (c) Ullrich Praetz - https://github.com/friflo. All rights reserved.
+// Copyright (c) Ullrich Praetz - https://github.com/friflo. All rights reserved.
 // See LICENSE file in the project root for full license information.
 
 using System;
@@ -441,6 +441,11 @@ public sealed class CommandBuffer : ICommandBuffer
     {
         ChangeComponent<T>(default, entityId,ComponentChangedAction.Add);
     }
+
+    public ref T AddAndGetComponent<T>(int entityId, T component) where T : struct, IComponent
+    {
+        return ref ChangeAndGetComponent(component, entityId, ComponentChangedAction.Add);
+    }
     
     /// <summary>
     /// Add the given <paramref name="component"/> with type <typeparamref name="T"/> to the entity with the passed <paramref name="entityId"/>.
@@ -470,7 +475,7 @@ public sealed class CommandBuffer : ICommandBuffer
         ChangeComponent<T>(default, entityId, ComponentChangedAction.Remove);
     }
     
-    private void ChangeComponent<T>(in T component, int entityId, ComponentChangedAction change)
+    private ref T ChangeAndGetComponent<T>(T component, int entityId, ComponentChangedAction change)
         where T : struct, IComponent
     {
         if (intern.returnedBuffer) {
@@ -491,8 +496,15 @@ public sealed class CommandBuffer : ICommandBuffer
         command.change          = change;
         command.entityId        = entityId;
         command.component       = component;
+        return ref command.component;
     }
-    
+
+    private void ChangeComponent<T>(in T component, int entityId, ComponentChangedAction change)
+        where T : struct, IComponent
+    {
+        ChangeAndGetComponent(component, entityId, change);
+    }
+
     private  ComponentCommands CreateComponentCommands(int structIndex) {
         var componentType = Static.ComponentTypes[structIndex];
         return intern.componentCommandTypes[structIndex] = componentType.CreateComponentCommands();
