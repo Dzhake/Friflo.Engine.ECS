@@ -436,10 +436,11 @@ public sealed class CommandBuffer : ICommandBuffer
     /// <summary>
     /// Add the <see cref="IComponent"/> with type <typeparamref name="T"/> to the entity with the passed <paramref name="entityId"/>.
     /// </summary>
-    public void AddComponent<T>(int entityId)
+    /// <returns>A reference to the component within the command buffer.</returns>
+    public ref T AddComponent<T>(int entityId)
         where T : struct, IComponent
     {
-        ChangeComponent<T>(default, entityId,ComponentChangedAction.Add);
+        return ref ChangeComponent<T>(default, entityId, ComponentChangedAction.Add);
     }
 
     public ref T AddAndGetComponent<T>(int entityId, T component) where T : struct, IComponent
@@ -450,20 +451,21 @@ public sealed class CommandBuffer : ICommandBuffer
     /// <summary>
     /// Add the given <paramref name="component"/> with type <typeparamref name="T"/> to the entity with the passed <paramref name="entityId"/>.
     /// </summary>
-    public void AddComponent<T>(int entityId, in T component)
+    /// <returns>A reference to the component within the command buffer.</returns>
+    public ref T AddComponent<T>(int entityId, in T component)
         where T : struct, IComponent
     {
-        ChangeComponent(component,  entityId, ComponentChangedAction.Add);
+        return ref ChangeComponent(component,  entityId, ComponentChangedAction.Add);
     }
     
     /// <summary>
     /// Obsolete. Same behavior as <c>AddComponent(int,T)</c>.
     /// </summary>
     [Obsolete("use AddComponent() instead")]
-    public void SetComponent<T>(int entityId, in T component)
+    public ref T SetComponent<T>(int entityId, in T component)
         where T : struct, IComponent
     {
-        ChangeComponent(component,  entityId, ComponentChangedAction.Add);
+        return ref ChangeComponent(component,  entityId, ComponentChangedAction.Add);
     }
     
     /// <summary>
@@ -475,7 +477,7 @@ public sealed class CommandBuffer : ICommandBuffer
         ChangeComponent<T>(default, entityId, ComponentChangedAction.Remove);
     }
     
-    private ref T ChangeAndGetComponent<T>(T component, int entityId, ComponentChangedAction change)
+    private ref T ChangeComponent<T>(scoped in T component, int entityId, ComponentChangedAction change)
         where T : struct, IComponent
     {
         if (intern.returnedBuffer) {
@@ -497,12 +499,6 @@ public sealed class CommandBuffer : ICommandBuffer
         command.entityId        = entityId;
         command.component       = component;
         return ref command.component;
-    }
-
-    private void ChangeComponent<T>(in T component, int entityId, ComponentChangedAction change)
-        where T : struct, IComponent
-    {
-        ChangeAndGetComponent(component, entityId, change);
     }
 
     private  ComponentCommands CreateComponentCommands(int structIndex) {
